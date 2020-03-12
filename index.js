@@ -29,11 +29,11 @@ app.get("/stop", async (req, res) => {
 	const curr = await current.json();
 	const { data } = curr;
 
-	if (!data) {
+	if (data === null) {
 		res.status(204).send();
 	}
 
-	const { id: currentId } = curr;
+	const { id: currentId } = data;
 
 	if (currentId) {
 		await fetch(`https://www.toggl.com/api/v8/time_entries/${currentId}/stop`, {
