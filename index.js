@@ -5,7 +5,7 @@ import "isomorphic-fetch";
 
 dotenv.config();
 
-const { TOGGL_TOKEN } = process.env;
+const { TOGGL_TOKEN, PASSWORD } = process.env;
 
 const port = process.env.PORT || 8181;
 const app = express();
@@ -14,6 +14,15 @@ const headers = {
 	Authorization: "Basic " + btoa(`${TOGGL_TOKEN}:api_token`)
 };
 
+const authenticate = (req, res, next) => {
+	if (`${req.headers["x-password"]}` === `${PASSWORD}`) {
+		next();
+	} else {
+		return res.status(401).send({ message: "Unauthorized" });
+	}
+};
+
+app.get("/stop", authenticate);
 app.get("/stop", async (req, res) => {
 	const current = await fetch(
 		"https://www.toggl.com/api/v8/time_entries/current",
@@ -23,14 +32,14 @@ app.get("/stop", async (req, res) => {
 	);
 
 	if (!current.ok) {
-		res.send({ message: "Current: API error" });
+		return res.send({ message: "Current: API error" });
 	}
 
 	const curr = await current.json();
 	const { data } = curr;
 
 	if (data === null) {
-		res.status(204).send();
+		return res.status(204).send();
 	}
 
 	const { id: currentId } = data;
@@ -45,6 +54,7 @@ app.get("/stop", async (req, res) => {
 	res.send({ message: "Toggl stopped!" });
 });
 
+app.get("/start/:project", authenticate);
 app.get("/start/:project", async (req, res) => {
 	const { project } = req.params;
 
